@@ -32,14 +32,37 @@ void matmul_naive(float *A, float *B, float *C, int n, int m, int p)
 {
 	int i, j, k;
 
-	//TODO: Implement the naive algorithm for matrix-matrix-multiplication
+	for ( i = 0; i < n; i++ )  {
+		for( j = 0; j < p; j++ ) {
+			C[ i + j * n ] = 0;
+			for ( k = 0; k < m; k++ ) {
+				C[ i + j * n ] += A[ i + k * n ] * B[ k + j * m ];
+			}
+		}
+	}
 }
 
 // Assume A is n x m matrix, B is m x p, therefore C is n x p matrix.
 void matmul_cached(float *A, float *B, float *C, int n, int m, int p)
 {
+	int i,j,k,I,J,K;
+	float sum = 0;
 
-	//TODO: Implement a blocked-algorithm for matrix-matrix-multiplication
+	for ( I = 0; I < n; I += BLOCKSIZE ) {
+		for ( J = 0; J < p; J += BLOCKSIZE ) {
+			for ( K = 0; K < m; K += BLOCKSIZE ) {
+				for( i = I; i < ( I + BLOCKSIZE < n ? I + BLOCKSIZE : n ); i++ ) {
+					for( j = J; j < ( J + BLOCKSIZE < p ? J + BLOCKSIZE : p ); j++ ) {
+						sum = 0;
+						for( k = K; k < ( K + BLOCKSIZE < m ? K + BLOCKSIZE : m ); k++ ) {
+							sum += A[ i + k * n ] * B[ k + j * m ]
+						}
+						C[ i + j * n ] += sum;
+					}
+				}
+			}
+		}
+	}
 }
 
 int main()
