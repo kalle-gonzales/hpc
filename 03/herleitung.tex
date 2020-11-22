@@ -1,0 +1,31 @@
+\documentclass[12pt]{report}
+\usepackage{xcolor}
+\usepackage[german]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+
+\parindent=0pt
+\parskip=\medskipamount
+\pagestyle{fancy}
+
+\begin{document}
+\fancyhead[R]{Luca Knaack \& Kilian Mauer}
+\fancyhead[L]{HPC - Herleitung Serie 03}
+Im Folgenden zeigen wir, wie wir die Summe auf geschickte Weise aufgeteilt berechnen können.
+Anstatt für gerade $k$ den Summanden zu addieren und für ungerade $k$ einen recht ähnlichen Summanden zu subtrahieren, 
+bilden wir die zunächst die Differenz zwischen den Summanden für gerades $k$ und den darauffolgenden Summanden für ungerades $k$ wie folgt:
+\begin{align*}
+  &\frac{x^{2k+1}}{(2k+1)!} - \frac{x^{2(k+1)+1}}{(2(k+1)+1)!} \overset{*}{=}\\[5mm]
+  &\frac{x^{2k+1}}{(2k+1)!} - \frac{x^{2k+1}*x^2}{(2k+1)! * (2k+2) * (2k+3)} = \\[5mm]
+  &\frac{x^{2k+1} * (2k+2) * (2k+3) - x^(2k+1)*x^2}{(2k+1)! * (2k+2) * (2k+3)} =\\[5mm]
+  &\frac{x^{2k+1} ((2k+2) * (2k+3) - x^2)}{(2k+1)! * (2k+2) * (2k+3)} =\\[5mm]
+  &\frac{(4k^2+ 10k + 6 - x^2)*x^{2k+1}}{(2k+2) * (2k+3) * (2k+1)!} =\\[5mm]
+  &\frac{4k^2+ 10k + 6 - x^2}{(2k+2) * (2k+3)} * \frac{x^{2k+1}}{(2k+1)!}
+\end{align*}
+
+(*) gilt, da\\
+$\frac{x^{2(k+1)+1}}{(2(k+1)+1)!} = \frac{x^{2k+2+1}}{(2k+2+1)!} = \frac{x^{2k+1}*x^2}{(2k+1)! * (2k+2) * (2k+3)}$\\
+\end{document}
