@@ -45,16 +45,57 @@ void libm_sinc(uint n, real *x, real *y)
 // taylor expansion.
 void taylor_sinc(uint n, real *x, real *y)
 {
-    //TODO: Implement the evalutation of the array x with the 'sinc'
-    //      function in scalar arithmetics.
+    //uint i, k;
+    uint i;
+    real xi;
+    real xisq;
+    //double prod = 1;
+    //int m = 11; //depth of the horner-schema/taylor expansion for sin. Increase with values of 2 to odd integers for higher accuracy.
+
+    for (i = 0; i < n; i++) {
+        xi = x[i];
+        xisq = xi*xi;
+        // evaluating the horner schema.
+        //for(k = 11; k-1 > 0; k -= 2) {
+        //    prod *= 1 - (xi2)/((k)*(k-1)) ;
+        //}
+        //y[i] = xi * prod;
+        y[i] = ( xi * ( 1.0 - ( ( xisq ) / ( 6.0 ) ) * ( 1.0 - ( ( xisq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xisq ) / ( 42.0 ) ) * ( 1.0 - ( ( xisq ) / ( 72.0 ) ) * ( 1.0 - ( ( xisq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi );
+    }
 }
+
+const __m256d v_one = {1.0, 1.0, 1.0, 1.0};
+const __m256d v_two = {2.0, 2.0, 2.0, 2.0};
+const __m256d v_six = {6.0, 6.0, 6.0, 6.0};
+const __m256d v_twenty = {20.0, 20.0, 20.0, 20.0};
+const __m256d v_fortyTwo = {42.0, 42.0, 42.0, 42.0};
+const __m256d v_seventyTwo = {72.0, 72.0, 72.0, 72.0};
+const __m256d v_oneHundredTen = {110.0, 110.0, 110.0, 110.0};
 
 // Compute y = sinc(x) for arrays 'x' and 'y' of length 'n' using
 // taylor expansion.
+// we use _m256d to contain 4 doubles. With _m256 we could contain 8 floats, but reals are doubles.
 void taylor_sinc_avx512(uint n, real *x, real *y)
 {
-    //TODO: Implement the evalutation of the array x with the 'sinc'
-    //      function in either AVX or AVX512 arithmetics.
+    __m256d v_y, v_xi, v_xisq, v_sin;
+
+    uint i;
+
+    for(i = 0; i+3 < n; i += 4) {
+        v_y   = _mm256_loadu_pd(y+i);
+        v_xi  = _mm256_loadu_pd(x+i);
+        v_xisq = _mm256_mul_pd(v_xi,v_xi);
+        v_sin = _mm256_mul_pd(v_xi,_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_six)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_twenty)),_mm256_mul_pd( _mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_fortyTwo)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_seventyTwo)),_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_oneHundredTen)))))));
+        v_y   = _mm256_div_pd(v_sin, v_xi);
+        _mm256_storeu_pd(y+i, v_y);
+    }
+
+    real xi, xisq;
+    for(; i < n; i++) {
+        xi = x[i];
+        xisq = xi * xi;
+        y[i] = ( xi * ( 1.0 - ( ( xisq ) / ( 6.0 ) ) * ( 1.0 - ( ( xisq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xisq ) / ( 42.0 ) ) * ( 1.0 - ( ( xisq ) / ( 72.0 ) ) * ( 1.0 - ( ( xisq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi ); 
+    }
 }
 
 // Compute y = sinc(x)+sinc(2x) for arrays 'x' and 'y' of length 'n'.
@@ -75,16 +116,50 @@ void libm_sincsum(uint n, real *x, real *y)
 // taylor expansion.
 void taylor_sincsum(uint n, real *x, real *y)
 {
-    //TODO: Implement the evalutation of the array x with the 'sinc(x) + sinc(2x)'
-    //      function in scalar arithmetics.
+    uint i;
+    real xi, xi2;
+    real xisq, xi2sq;
+
+    for (i = 0; i < n; i++) {
+        xi = x[i];
+        xisq = xi*xi;
+        xi2 = 2.0 * xi;
+        xi2sq = xi2 * xi2;
+
+        y[i] = (( xi * ( 1.0 - ( ( xisq ) / ( 6.0 ) ) * ( 1.0 - ( ( xisq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xisq ) / ( 42.0 ) ) * ( 1.0 - ( ( xisq ) / ( 72.0 ) ) * ( 1.0 - ( ( xisq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi )) + (( xi2 * ( 1.0 - ( ( xi2sq ) / ( 6.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xi2sq ) / ( 42.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 72.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi2 ));
+    }
 }
 
 // Compute y = sinc(x)+sinc(2x) for arrays 'x' and 'y' of length 'n' using
 // taylor expansion.
 void taylor_sincsum_avx512(uint n, real *x, real *y)
 {
-    //TODO: Implement the evalutation of the array x with the 'sinc(x) + sinc(2x)'
-    //      function in either AVX or AVX512 arithmetics.
+    __m256d v_y, v_xi, v_xi2, v_xisq, v_xi2sq, v_sinxi, v_sinxi2, v_sincxi, v_sincxi2;
+
+    uint i;
+
+    for(i = 0; i+3 < n; i += 4) {
+        v_y     = _mm256_loadu_pd(y+1);
+        v_xi    = _mm256_loadu_pd(x+i);
+        v_xi2   = _mm256_mul_pd(v_two,v_xi);
+        v_xisq  = _mm256_mul_pd(v_xi, v_xi);
+        v_xi2sq = _mm256_mul_pd(v_xi2, v_xi2);
+        v_sinxi = _mm256_mul_pd(v_xi,_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_six)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_twenty)),_mm256_mul_pd( _mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_fortyTwo)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_seventyTwo)),_mm256_sub_pd(v_one,_mm256_div_pd(v_xisq,v_oneHundredTen)))))));
+        v_sinxi2 = _mm256_mul_pd(v_xi2,_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xi2sq,v_six)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xi2sq,v_twenty)),_mm256_mul_pd( _mm256_sub_pd(v_one,_mm256_div_pd(v_xi2sq,v_fortyTwo)),_mm256_mul_pd(_mm256_sub_pd(v_one,_mm256_div_pd(v_xi2sq,v_seventyTwo)),_mm256_sub_pd(v_one,_mm256_div_pd(v_xi2sq,v_oneHundredTen)))))));
+        v_sincxi = _mm256_div_pd(v_sinxi, v_xi);
+        v_sincxi2 = _mm256_div_pd(v_sinxi2, v_xi2);
+        v_y = _mm256_add_pd(v_sincxi, v_sincxi2);
+        _mm256_storeu_pd(y+i, v_y);
+    }
+
+    real xi, xi2, xisq, xi2sq;
+    for (; i < n; i++) {
+        xi = x[i];
+        xi2 = 2.0 * xi;
+        xisq = xi * xi;
+        xi2sq = xi2 * xi2;
+        y[i] = y[i] = (( xi * ( 1.0 - ( ( xisq ) / ( 6.0 ) ) * ( 1.0 - ( ( xisq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xisq ) / ( 42.0 ) ) * ( 1.0 - ( ( xisq ) / ( 72.0 ) ) * ( 1.0 - ( ( xisq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi )) + (( xi2 * ( 1.0 - ( ( xi2sq ) / ( 6.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 20.0 ) ) ) * ( 1.0 - ( ( xi2sq ) / ( 42.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 72.0 ) ) * ( 1.0 - ( ( xi2sq ) / ( 110.0 ) ) ) ) ) ) ) / ( xi2 ));
+    }
 }
 
 int main(int argc, char const *argv[])
