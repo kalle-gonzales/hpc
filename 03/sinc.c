@@ -46,46 +46,27 @@ void libm_sinc(uint n, real *x, real *y)
 void taylor_sinc(uint n, real *x, real *y)
 {
   int k, i;
-  int m = 11; // needs to be adjusted to get the needed precission
-  real positiveSummand, negativeSummand;
-  uint denominator;
-  real numerator;
-  real x_value;
-  // for (i = 0; i < n; i++)
+  real prod, x_square, old_prod;
+  int two_k, m = 100;
+  for (i = 0; i < n; i++)
   {
-    x_value = x[i];
-    numerator = x_value * x_value * x_value; // x^{2*1+1} for k = 1
-    denominator = 6; // (2+1)! for k = 1
-    positiveSummand = x_value;
-    negativeSummand = numerator / denominator;
-    printf("=========== \n %.5e\n", x_value);
+    prod = x[i];
+    x_square = prod * prod;
+    // old_prod = 0;
     // k = 1;
-    for (k = 1; k < m-1; k = k + 2)
-    {
-    printf("Step: %i, PosSum: %.5e, NegSum: %.5e\n", k, positiveSummand, negativeSummand);
-    printf("Zähler: %.5e, Nenner: %.5d, x: %.5e\n", numerator, denominator, x_value);
-      // x^{2k+1} = x^{2k}*x = x^{2k-2+2}*x = x^{2(k-1) + 2}*x = x^{2k-1}*x^2*x
-      numerator *= x_value * x_value * x_value;
-      // (2(k+1)+1)! = (2k+2+1)! = (2k+3)! = (2k+1)! * (2k+3) * (2k+2) = (2k+1)! * (4k^2 + 10k + 6) = (2k+1)! * (k(4k + 10) + 6)
-      denominator *=  (k * (4*k + 10) + 6);
-      negativeSummand += numerator / denominator;
-    printf("HALFSTEP Zähler: %.5e, Nenner: %.5d, Summand: %.5e\n", numerator, denominator, negativeSummand);
-
-      numerator *= x_value * x_value * x_value;
-      denominator *= (k*(4*k+18)+20); // *= (k^2 + 9k + 20)*= (k+4)*(k+5)
-      positiveSummand += numerator / denominator;
-      printf("FULLSTEP Zähler: %.5e, Nenner: %.5d, Summand: %.5e\n", numerator, denominator, positiveSummand);
-      printf("------\n");
+    // while(fabs(prod - old_prod) > __FLT_EPSILON__)
+    // {
+    //   old_prod = prod;
+    //   two_k = k << 1;
+    //   prod *= 1 - x_square / (two_k * (two_k + 1));
+    //   k++;
+    // }
+    for (k = m; k > 0; k--){
+      two_k = k << 1;
+      prod *= 1 - x_square / (two_k * (two_k + 1));
     }
-    if (k < m)
-    {
-      numerator *= x_value * x_value * x_value;
-      denominator *= k*4*(k-1);
-      negativeSummand += numerator / denominator;
-    }
+    y[i] = prod;
   }
-
-  y[i] = positiveSummand - negativeSummand;
 }
 
 // Compute y = sinc(x) for arrays 'x' and 'y' of length 'n' using
